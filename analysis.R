@@ -7,7 +7,7 @@ library(magrittr)
 library(lubridate)
 library(ggplot2)
 library(gganimate)
-library(av)
+library(gifski)
 
 # From https://www.ers.usda.gov/data-products/county-level-data-sets/download-data/
 here::here("data/population/PopulationEstimates.xls") %>%
@@ -104,9 +104,9 @@ final_animation<-animate(anim_plot,
                          fps = 16,
                          width = 950, 
                          height = 750, 
-                         renderer = av_renderer())
+                         renderer = gifski_renderer())
 
-anim_save(here::here("animation.webm"),
+anim_save(here::here("animation.gif"),
           animation=final_animation)
 
 

@@ -22,16 +22,18 @@ here::here("data/elections/countypres_2000-2020.tab") %>%
   filter(
     !is.na(county_fips), 
     year == 2020,
-    candidate == "DONALD J TRUMP",
+    candidate %in% c("DONALD J TRUMP","JOSEPH R BIDEN JR")
     ) %>%
-  group_by(county_fips) %>%
+  group_by(county_fips, candidate) %>%
   summarise(
-    candidatevotes = sum(candidatevotes),
-    totalvotes = first(totalvotes)
+    candidatevotes = sum(candidatevotes)
   ) %>%
+  mutate(totalvotes = sum(candidatevotes)) %>%
+  filter(candidate == "DONALD J TRUMP") %>%
   mutate(trump_share = candidatevotes / totalvotes,
          FIPS = stringi::stri_pad_left(county_fips, width=5, pad = "0")) %>%
-  select(FIPS, trump_share, totalvotes) -> election_data
+  ungroup() %>%
+  select(FIPS, trump_share) -> election_data
 
 # From https://www.ers.usda.gov/data-products/county-level-data-sets/download-data/
 here::here("data/covid/COVID-19_Vaccinations_in_the_United_States_County.csv") %>%
@@ -69,15 +71,20 @@ vaccine_data %>%
     Date == ymd("2021-07-08"),
     Series_Complete_Yes == 0
   ) %>%
-  select(trump_share, totalvotes, POP_ESTIMATE_2019, 
+  select(trump_share, POP_ESTIMATE_2019, 
          Recip_County, Recip_State, FIPS,
          Series_Complete_Pop_Pct,
          Series_Complete_Yes)
 
-frames_per_day = 2
-vaccine_data %>% pull(Date) %>% range() %>% diff() -> ndays
+# Remove those that are ALWAYS 0 for all days; assume 
+# these are errors/missing (could be wrong!)
+vaccine_data %<>%
+  group_by(FIPS) %>%
+  mutate(no_vaccinations = all(Series_Complete_Yes == 0)) %>%
+  filter(!no_vaccinations)
 
-## Animation
+## Animation 1
+## Animated scatterplot
 vaccine_data %>%
   ggplot(aes(x = trump_share*100, y = Series_Complete_Pop_Pct, 
              size = POP_ESTIMATE_2019,
@@ -86,7 +93,7 @@ vaccine_data %>%
   scale_colour_viridis_c("Trump vote share (2020)") +
   scale_y_continuous(name = "Complete vaccination (%)",
                      limits = c(0,100), expand = c(0,0)) +
-  scale_x_continuous(name = "Trump share of vote (%)",
+  scale_x_continuous(name = "Trump share of two-party vote (%)",
                      limits = c(0,100), expand = c(0,0)) +
   geom_point() +
   hrbrthemes::theme_ipsum_rc() -> static_plot

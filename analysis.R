@@ -99,15 +99,16 @@ vaccine_data %>%
   hrbrthemes::theme_ipsum_rc() -> static_plot
 
 static_plot +
-  transition_states(states = Date, transition_length = 4, state_length = 1) + 
-  ease_aes('cubic-in-out') +
-  #view_follow(fixed_x = TRUE) +
+  transition_states(states = Date) + 
+  ease_aes() +
   labs(title = 'Percentage vaccinated by 2020 Trump support, {closest_state}', 
        subtitle = "US Counties",
        caption = "Data Sources: CDC, Harvard Dataverse, USDA") -> anim_plot
 
+ndays = vaccine_data %>% pull(Date) %>% range() %>% diff() %>% as.integer()
+
 final_animation<-animate(anim_plot, 
-                         nframes = as.integer(frames_per_day * ndays),
+                         nframes = 2*ndays,
                          fps = 16,
                          width = 950, 
                          height = 750, 
